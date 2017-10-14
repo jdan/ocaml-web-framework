@@ -14,12 +14,12 @@ module RequestBuffer = struct
     let index = index_string buffer needle in
     if index > -1 then
       (* TODO: String.split_in_two *)
-      (
-        String.sub buffer 0 index,
-
+      let str = String.sub buffer 0 index in
+      let remaining_buffer =
         let start_index = index + (String.length needle) in
         String.sub buffer start_index ((String.length buffer) - start_index)
-      )
+
+      in (str, remaining_buffer)
     else
       let in_bytes = Bytes.create buffer_length in
       match (Unix.recv socket in_bytes 0 buffer_length []) with
@@ -82,9 +82,11 @@ type response = { socket: Unix.file_descr ;
                 }
 
 let response_of_socket socket =
+  let headers = Hashtbl.create 10 in
+  Hashtbl.add headers "X-Served-By" "OCamlNet";
   { socket = socket ;
     status = 200 ;
-    headers = Hashtbl.create 10 ;
+    headers = headers ;
     body = "" ;
   }
 
@@ -113,18 +115,18 @@ let send res =
   send_line res "";
   send_line res res.body
 
-let set_header res k v =
+let set_header k v res =
   Hashtbl.add res.headers k v;
   res
 
-let set_body res body =
-  ignore (set_header res "Content-Length" (string_of_int (String.length body)));
+let set_body body res =
+  ignore (set_header "Content-Length" (string_of_int (String.length body)) res);
   { res with
     body = body ;
   }
 
-let send_string res str =
-  set_body res str |> send
+let send_string str res =
+  send (set_body str res)
 
 let create_server port handler =
   let max_connections = 8 in
@@ -145,4 +147,4 @@ let create_server port handler =
   done
 
 let () =
-  create_server 1337 (fun req res -> send_string res "Hello, world!")
+  create_server 1337 (fun req res -> send_string "Hello, world!" res)
