@@ -1,12 +1,12 @@
-(* https://stackoverflow.com/a/8373836/712889 *)
-let index_string s1 s2 =
-  let re = Str.regexp_string s2
-  in
-  try Str.search_forward re s1 0
-  with Not_found -> -1
-
 module RequestBuffer = struct
   let buffer_length = 1024
+
+  (* https://stackoverflow.com/a/8373836/712889 *)
+  let index_string s1 s2 =
+    let re = Str.regexp_string s2
+    in
+    try Str.search_forward re s1 0
+    with Not_found -> -1
 
   let rec recv_until socket buffer needle =
     (* TODO: We don't need to check the entire buffer, just
@@ -75,9 +75,59 @@ let recv_request socket =
     headers = headers ;
   }
 
-let () =
+type response = { socket: Unix.file_descr ;
+                  status: int ;
+                  headers: (string, string) Hashtbl.t ;
+                  body: string ;
+                }
+
+let response_of_socket socket =
+  { socket = socket ;
+    status = 200 ;
+    headers = Hashtbl.create 10 ;
+    body = "" ;
+  }
+
+let send_line res line =
+  let with_return = line ^ "\r\n" in
+  ignore (Unix.send res.socket with_return 0 (String.length with_return) [])
+
+let phrase_of_status_code = function
+  | 200 -> "OK"
+  | 404 -> "Not found"
+  | _ -> "Unknown"
+
+let send_headers res =
+  Hashtbl.iter
+    (fun k v ->
+       send_line res (Printf.sprintf "%s: %s" k v))
+    res.headers
+
+let send res =
+  send_line
+    res
+    (Printf.sprintf "HTTP/1.1 %d %s"
+       res.status
+       (phrase_of_status_code res.status));
+  send_headers res;
+  send_line res "";
+  send_line res res.body
+
+let set_header res k v =
+  Hashtbl.add res.headers k v;
+  res
+
+let set_body res body =
+  ignore (set_header res "Content-Length" (string_of_int (String.length body)));
+  { res with
+    body = body ;
+  }
+
+let send_string res str =
+  set_body res str |> send
+
+let create_server port handler =
   let max_connections = 8 in
-  let port = 1337 in
   let my_addr = Unix.inet_addr_of_string "127.0.0.1" in
   let s_descr = Unix.socket Unix.PF_INET Unix.SOCK_STREAM 0 in
 
@@ -85,9 +135,14 @@ let () =
   Unix.bind s_descr (Unix.ADDR_INET(my_addr, port));
   Unix.listen s_descr max_connections;
 
-  (* loop dis *)
-  let (conn_socket, conn_addr) = Unix.accept s_descr in
+  while true do
+    let (conn_socket, conn_addr) = Unix.accept s_descr in
+    let req = recv_request conn_socket in
+    let res = response_of_socket conn_socket in
 
-  let req = recv_request conn_socket in
-  print_endline (req.line.meth ^ " " ^ req.line.path);
-  Hashtbl.iter (fun k v -> (print_endline (k ^ " -> " ^ v))) req.headers;
+    print_endline (req.line.meth ^ " " ^ req.line.path);
+    handler req res
+  done
+
+let () =
+  create_server 1337 (fun req res -> send_string res "Hello, world!")
