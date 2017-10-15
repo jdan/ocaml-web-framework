@@ -1,6 +1,6 @@
 type route = { meth: string ;
                pattern: string ;
-               handler: Router.params -> Http.Request.request -> Http.Response.response -> unit ;
+               handler: Router.params -> string ;
              }
 
 type server = { routes: route list }
@@ -20,7 +20,7 @@ let rec route routes req res =
       if item.meth = Http.Request.req_method req then
         match Router.match_pattern item.pattern (Http.Request.req_path req) with
         | None -> route rest req res
-        | Some params -> item.handler params req res
+        | Some params -> Http.Response.send_string (item.handler params) res
       else
         not_found req res
     end
