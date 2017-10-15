@@ -1,6 +1,10 @@
+type req = Http.Request.request * Router.params
+
+type res = Http.Response.response
+
 type route = { meth: string ;
                pattern: string ;
-               handler: Router.params -> string ;
+               handler: req -> res -> res ;
              }
 
 type server = { routes: route list }
@@ -13,17 +17,17 @@ let not_found req res =
   |> Http.Response.set_body
     (Printf.sprintf "Unknown path %s" (Http.Request.req_path req))
 
-let route server req res =
+let route server req =
   let rec inner routes =
     match routes with
-    | [] -> not_found req res
+    | [] -> not_found req
     | item :: rest -> begin
         if item.meth = Http.Request.req_method req then
           match Router.match_pattern item.pattern (Http.Request.req_path req) with
           | None -> inner rest
-          | Some params -> Http.Response.set_body (item.handler params) res
+          | Some params -> item.handler (req, params)
         else
-          not_found req res
+          not_found req
       end
   in inner (List.rev server.routes)
 
@@ -43,8 +47,12 @@ let post pattern handler server =
              :: server.routes
   }
 
+let respond str res =
+  Http.Response.set_body str res
+
+let param (_, params) key = List.assoc key params
+
 let listen port server =
   Http.create_server
     port
-    (fun req res ->
-       Http.Response.send (route server req res))
+    (fun req res -> route server req res |> Http.Response.send)

@@ -16,7 +16,7 @@ let mock_response handlers request_line =
 let go () =
   assert(
     mock_response
-      [get "/" (fun _ -> "Hello, world!")]
+      [get "/" (fun _ -> respond "Hello, world!")]
       "GET / HTTP/1.1"
     |> Http.Response.response_body
        = "Hello, world!"
@@ -25,8 +25,8 @@ let go () =
   assert(
     mock_response
       [
-        get "/jordan" (fun _ -> "Hey it's jordan!") ;
-        get "/:name" (fun params -> "Hello, " ^ (List.assoc "name" params) ^ "!") ;
+        get "/jordan" (fun _ -> respond "Hey it's jordan!") ;
+        get "/:name" (fun req -> "Hello, " ^ (param req "name") ^ "!" |> respond) ;
       ]
       "GET /jordan HTTP/1.1"
     |> Http.Response.response_body
@@ -36,8 +36,8 @@ let go () =
   assert(
     mock_response
       [
-        get "/jordan" (fun _ -> "Hey it's jordan!") ;
-        get "/:name" (fun params -> "Hello, " ^ (List.assoc "name" params) ^ "!") ;
+        get "/jordan" (fun _ -> respond "Hey it's jordan!") ;
+        get "/:name" (fun req -> "Hello, " ^ (param req "name") ^ "!" |> respond) ;
       ]
       "GET /alex HTTP/1.1"
     |> Http.Response.response_body
@@ -47,8 +47,8 @@ let go () =
   assert(
     mock_response
       [
-        get "/" (fun _ -> "This is the index page") ;
-        get "/:name" (fun params -> "Hello, " ^ (List.assoc "name" params) ^ "!") ;
+        get "/" (fun _ -> respond "This is the index page") ;
+        get "/:name" (fun req -> "Hello, " ^ (param req "name") ^ "!" |> respond) ;
       ]
       "GET /alex/profile /HTTP/1.1"
     |> Http.Response.response_status
