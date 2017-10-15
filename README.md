@@ -14,7 +14,7 @@ $ make test
 ### Example
 
 ```ocaml
-open Framework;;
+open Framework
 
 let () =
   create_server ()

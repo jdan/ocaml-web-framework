@@ -1,4 +1,4 @@
-open Framework;;
+open Framework
 
 let () =
   create_server ()
