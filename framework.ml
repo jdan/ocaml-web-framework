@@ -44,4 +44,4 @@ let post pattern handler server =
 let listen port server =
   Http.create_server
     port
-    (fun req res -> route server.routes req res)
+    (fun req res -> route (List.rev server.routes) req res)
