@@ -10,20 +10,22 @@ let create_server () = { routes = [] }
 let not_found req res =
   res
   |> Http.Response.set_status 404
-  |> Http.Response.send_string
+  |> Http.Response.set_body
     (Printf.sprintf "Unknown path %s" (Http.Request.req_path req))
 
-let rec route routes req res =
-  match routes with
-  | [] -> not_found req res
-  | item :: rest -> begin
-      if item.meth = Http.Request.req_method req then
-        match Router.match_pattern item.pattern (Http.Request.req_path req) with
-        | None -> route rest req res
-        | Some params -> Http.Response.send_string (item.handler params) res
-      else
-        not_found req res
-    end
+let route server req res =
+  let rec inner routes =
+    match routes with
+    | [] -> not_found req res
+    | item :: rest -> begin
+        if item.meth = Http.Request.req_method req then
+          match Router.match_pattern item.pattern (Http.Request.req_path req) with
+          | None -> inner rest
+          | Some params -> Http.Response.set_body (item.handler params) res
+        else
+          not_found req res
+      end
+  in inner (List.rev server.routes)
 
 let get pattern handler server =
   { routes = { meth = "GET" ;
@@ -44,4 +46,5 @@ let post pattern handler server =
 let listen port server =
   Http.create_server
     port
-    (fun req res -> route (List.rev server.routes) req res)
+    (fun req res ->
+       Http.Response.send (route server req res))

@@ -5,7 +5,7 @@ all:
 
 test:
 	ocamlbuild -use-ocamlfind -libs str,unix test.native
-	./test.native
+	@./test.native && echo "Tests pass"
 
 clean:
 	rm -rf _build/

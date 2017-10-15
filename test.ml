@@ -1,2 +1,3 @@
 let () =
-  Router_test.go ()
+  Router_test.go ();
+  Framework_test.go ();

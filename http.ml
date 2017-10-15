@@ -46,16 +46,22 @@ module Request = struct
   let req_method req = req.line.meth
   let req_path req = req.line.path
 
+  let line_of_string line =
+    match (String.split_on_char ' ' line) with
+    | [meth ; path ; version] ->
+      { meth = meth ;
+        path = path ;
+        version = version ;
+      }
+    | _ -> raise (Invalid_argument ("Invalid request line: " ^ line))
+
+  let request_of_line line = { line = line_of_string line ;
+                               headers = Hashtbl.create 10 ;
+                             }
+
   let recv_request_line socket =
     let (line, buffer) = RequestBuffer.recv_line socket "" in
-    match (String.split_on_char ' ' line) with
-    | [meth ; path ; version] -> (
-        { meth = meth ;
-          path = path ;
-          version = version ;
-        },
-        buffer)
-    | _ -> raise (Invalid_argument ("Invalid request line: " ^ line))
+    (line_of_string line, buffer)
 
   let recv_request_headers socket buffer =
     let headers = Hashtbl.create 10 in
@@ -86,6 +92,10 @@ module Response = struct
                     headers: (string, string) Hashtbl.t ;
                     body: string ;
                   }
+
+  let response_body response = response.body
+
+  let response_status response = response.status
 
   let response_of_socket socket =
     let headers = Hashtbl.create 10 in
