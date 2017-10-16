@@ -153,7 +153,7 @@ type handler = Request.request -> Response.response -> unit
 
 let create_server port (handler: handler) =
   let max_connections = 8 in
-  let my_addr = Unix.inet_addr_of_string "127.0.0.1" in
+  let my_addr = Unix.inet_addr_of_string "0.0.0.0" in
   let s_descr = Unix.socket Unix.PF_INET Unix.SOCK_STREAM 0 in
 
   Unix.setsockopt s_descr Unix.SO_REUSEADDR true;
