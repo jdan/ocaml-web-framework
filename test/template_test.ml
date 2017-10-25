@@ -8,5 +8,7 @@ let go () =
             strong ["world!"] ;
           ]);
 
-  assert ("<h1 class=\"huge\">Title</h1>" =
-          h1 ~attrs:[("class", "huge")] ["Title"]);
+  assert ("<h1 id=\"title\" class=\"huge\">Title</h1>" =
+          h1
+            ~attrs:[("id", "title"); ("class", "huge")]
+            ["Title"]);
