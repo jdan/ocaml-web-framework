@@ -31,7 +31,10 @@ module RequestBuffer = struct
           needle
 
   let recv_line socket buffer =
-    recv_until socket buffer "\r\n"
+    let (line, buffer) = recv_until socket buffer "\r\n" in
+    (* Debug! *)
+    print_endline ("> " ^ line);
+    (line, buffer)
 end
 
 module Request = struct
@@ -45,6 +48,7 @@ module Request = struct
 
   let req_method req = req.line.meth
   let req_path req = req.line.path
+  let req_version req = req.line.version
 
   let line_of_string line =
     match (String.split_on_char ' ' line) with
@@ -164,8 +168,5 @@ let create_server port (handler: handler) =
     let (conn_socket, conn_addr) = Unix.accept s_descr in
     let req = Request.recv_request conn_socket in
     let res = Response.response_of_socket conn_socket in
-
-    print_endline
-      (Printf.sprintf "%s %s" (Request.req_method req) (Request.req_path req));
     handler req res
   done
