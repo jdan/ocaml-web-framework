@@ -17,10 +17,11 @@ $ make test
 
 ```ocaml
 open Framework
+open Template
 
 let () =
   create_server ()
-  |> get "/" (fun req -> respond "This is the index page.")
+  |> get "/" (fun req -> h1 ["This is the index page."] |> respond)
   |> get "/:name" (fun req ->
       Printf.sprintf "Hello, %s!" (param req "name") |> respond)
   |> listen 1337

@@ -48,7 +48,9 @@ let post pattern handler server =
   }
 
 let respond str res =
-  Http.Response.set_body str res
+  res
+  |> Http.Response.set_header "Content-Type" "text/html"
+  |> Http.Response.set_body str
 
 let param (_, params) key = List.assoc key params
 
