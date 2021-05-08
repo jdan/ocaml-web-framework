@@ -11,7 +11,7 @@ ADD main.ml webapp/
 ADD src webapp/src/
 WORKDIR webapp/
 
-RUN eval `opam config env` && make
+RUN eval `opam config env` && opam install ocamlbuild && make
 
 EXPOSE 8080
 
