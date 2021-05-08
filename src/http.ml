@@ -27,7 +27,7 @@ module RequestBuffer = struct
       | length ->
         recv_until
           socket
-          (buffer ^ (String.sub in_bytes 0 length))
+          (buffer ^ (String.sub (Bytes.to_string in_bytes) 0 length))
           needle
 
   let recv_line socket buffer =
@@ -112,7 +112,7 @@ module Response = struct
 
   let send_line res line =
     let with_return = line ^ "\r\n" in
-    ignore (Unix.send res.socket with_return 0 (String.length with_return) [])
+    ignore (Unix.send res.socket (Bytes.of_string with_return) 0 (String.length with_return) [])
 
   let phrase_of_status_code = function
     | 200 -> "OK"
